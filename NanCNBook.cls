@@ -6,20 +6,26 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesClass{NanCNBook}[2016/07/11 Nan's latex book template for chinese support]
 \LoadClass[a4paper, 12pt]{book}
-% layout
+
+%% layout
+% indent
 \RequirePackage[top=3cm,bottom=3cm,left=3cm,right=3cm]{geometry}
+\RequirePackage{indentfirst}
+\setlength{\parindent}{2em}
+\linespread{1.2}
+\setlength{\parskip}{12pt}
 % add graph
 \RequirePackage{graphicx}
 \graphicspath{{./figs/}{./}}
 % super ref
-\RequirePackage{hyperref}
-
+\RequirePackage[colorlinks,
+linkcolor=red,
+anchorcolor=blue,
+citecolor=green]{hyperref}
 % get math suppport
 \RequirePackage{latexsym,pifont,units,amsmath,amsfonts,amssymb,marvosym}
 % insert code
 \RequirePackage{minted}
-% indent
-\RequirePackage{indentfirst}
 
 %% fonts setting
 % xeCJK fonts
@@ -60,7 +66,7 @@
 \renewcommand{\appendixname}{附{\qquad}录}
 \renewcommand{\indexname}{索{\qquad}引}
 \renewcommand{\figurename}{图}
-\renewcommand{\tablename}{表}
+\renewcommand{\tablename}{\hei{表}}
 \renewcommand{\bibname}{参{\quad}考{\quad}文{\quad}献}
 
 %% contents
@@ -69,7 +75,7 @@
 \titlecontents{part}
 [0em]
 {\hei}
-{第\CJKnumber{\thecontentslabel}\quad}
+{第\CJKnumber{\thecontentslabel}部分\quad}
 {}{\titlerule*{.}\contentspage}
 % chapter
 \titlecontents{chapter}
@@ -118,7 +124,7 @@
 {}
 % section
 \titleformat{\section}
-{\centering\Large\bfseries}
+{\Large\bfseries}
 {\S~\thesection}
 {1em}
 {}
