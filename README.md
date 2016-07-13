@@ -1,2 +1,7 @@
-# nanBookTeXTemplateCN
-My own book template for chinese support.
+# 写这本书用来做什么？
+写这本书的目的是更好的学习Caffe的诸多实现细节，从而更好的进行机器学习方面的研究工作。
+
+# 这本书使用的模板是什么？
+写着本书的另一方面是为了学习LaTeX方面的技术，概述使用了一个作者自己设计的中文Book模板。
+
+
