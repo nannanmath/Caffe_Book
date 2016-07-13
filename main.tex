@@ -1,5 +1,8 @@
 \documentclass{NanCNBook}
 
+%\includeonly{}
+
+
 \title{\hei\chuhao{Caffe\cite{jia2014caffe}解析}}
 \author{nannanmath}
 
@@ -52,63 +55,7 @@ Caffe代码的实现依赖了大量第三方功能库（特别是使用了多个
 
 \section{图像写入数据库convert\_query.cpp}
 
-\section{训练与测试caffec.cpp}
-caffe.cpp实现了一个网络的训练与测试功能，是Caffe中最常用的程序。该程序中包含很多技巧，其中一些很值得在软件开发中借鉴使用。
-
-
-首先判断是否启用python\_layer：
-\begin{minted}{c++}
-#ifdef WITH_PYTHON_LAYER
-#include "boost/python.hpp"
-namespace bp = boost::python;
-#endif
-\end{minted}
-通过Makefile判断是否启用python\_layer，如果启用则包含Boost库的boost::python库，实现python调用C++功能。
-
-
-使用gflags进行参数设置：
-\begin{minted}{c++}
-DEFINE_string(gpu, "",
-    "Optional; run in GPU mode on given device IDs separated by ','."
-    "Use '-gpu all' to run on all available GPUs. The effective training "
-    "batch size is multiplied by the number of devices.");
-DEFINE_string(solver, "",
-    "The solver definition protocol buffer text file.");
-DEFINE_string(model, "",
-    "The model definition protocol buffer text file.");
-DEFINE_string(snapshot, "",
-    "Optional; the snapshot solver state to resume training.");
-DEFINE_string(weights, "",
-    "Optional; the pretrained weights to initialize finetuning, "
-    "separated by ','. Cannot be set simultaneously with snapshot.");
-DEFINE_int32(iterations, 50,
-    "The number of iterations to run.");
-DEFINE_string(sigint_effect, "stop",
-             "Optional; action to take when a SIGINT signal is received: "
-              "snapshot, stop or none.");
-DEFINE_string(sighup_effect, "snapshot",
-             "Optional; action to take when a SIGHUP signal is received: "
-             "snapshot, stop or none.");
-\end{minted}
-其中包含的参数有：gpu，solver，model，snapshot，weights，iteration，sigint\_effect和sighup\_effect。主要功能见表\ref{tab:参数说明}：
-\begin{table}[h]
-  \setlength{\abovecaptionskip}{-5pt}
-  \caption{参数说明}
-  \centering
-  \begin{tabular}{|c|l|}
-    \hline
-    gpu & 是否使用GPU运行 \\ \hline
-    solver & solver文件路径 \\ \hline
-    model & 模型路径 \\ \hline
-    snapshot & 参数文件保存路径 \\ \hline
-    weights & 参数文件路径 \\ \hline
-    iterations & 最大迭代次数 \\ \hline
-    sigint\_effect & 不知道 \\ \hline
-    sighup\_effect & 不知道 \\
-    \hline
-  \end{tabular}
-  \label{tab:参数说明}
-\end{table}
+\include{include/chp_from_tools/caffe_cpp}
                     
 
 
