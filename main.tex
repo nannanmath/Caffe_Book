@@ -1,4 +1,5 @@
-\documentclass{NanCNBook}
+
+\documentclass{../NanCNBook}
 
 %\includeonly{}
 
@@ -18,7 +19,7 @@
 
 
 
-%\pagenumbering{roman}
+% \pagenumbering{roman}
 \tableofcontents
 \listoffigures
 \listoftables
@@ -32,8 +33,15 @@
 
 \chapter{Caffe的依赖库}
 Caffe代码的实现依赖了大量第三方功能库（特别是使用了多个Google公司的开源库），在“站在巨人的肩膀上”的同时，也为Caffe代码的学习带来一定困难。本章将对这些依赖库的功能和使用做简要介绍。
+\section{C/C++标准库}
+类型：
+std::vector<>
+std::pair<>
+方法：
+std::partial\_sort()
+std::cout << std::fixed << std::setprecision(4)
 \section{准标准库Boost}
-
+shared\_ptr智能指针
 \section{日志功能glog库}
 
 \section{程序参数处理gflags库}
@@ -43,12 +51,28 @@ Caffe代码的实现依赖了大量第三方功能库（特别是使用了多个
 \section{结构化protobuf库}
 
 \section{图像处理opencv库}
-
+类型：
+cv::Size
+cv::Scalar
+方法：
+cv::merge()
+cv::mean()
+cv::cvtColor()
+cv::resize()
+cv::Mat的convertTo()
+cv::subtract()
+cv::splite()
+cv::imread()
+cv::Mat(height, width, type, data)
+cv::Mat(cv::Size, type, cv::Scalar)
 \chapter{Caffe的层次}
 
 \part{Caffe的外部调用}
 
-\chapter{从tools开始}
+\chapter{从examples开始}
+\include{include/chp_from_examples/classification_cpp}
+
+\chapter{常用工具tools}
 在Caffe代码的tools目录下包含了诸多作为tools的工具软件代码，他们通过对Caffe核心功能的调用实现各种外层的逻辑应用。
 
 \section{计算图像均值compute\_image\_mean.cpp}
