@@ -2,6 +2,6 @@
 !/.git/
 !.gitignore
 !main.tex
-!NanCNBook.cls
-!/include/
+!**/*.tex
+!**/figures/
 !README.md
