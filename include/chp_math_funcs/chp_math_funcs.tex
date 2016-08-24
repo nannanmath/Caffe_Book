@@ -1,0 +1,58 @@
+\chapter{数学运算及辅助函数}
+Caffe将底层的数学运算和一些辅助函数专门进行了分离，统一保存在名为math\_functions.hpp、math\_functions.cpp和math\_functions.cu的文件中，其中math\_functions.cu是GPU上运行的函数实现。
+% Section X.1
+\section{数学运算函数}
+% Section X.1.1
+\subsection{CPU函数}
+% Section X.1.2
+\subsection{GPU函数}
+% Section X.2
+\section{存储操作}
+% Section X.2.1
+\subsection{内存初始化}\label{math/mem/init}
+\subsubsection{caffe\_memset()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     inline void caffe\_memset(const size\_t N, const int alpha, void* X)
+   \item{\kai{参数}}\\
+     N - 字节数\\
+     alpha - 初始值\\
+     X - 内存首地址
+   \item{\kai{返回值}}\\
+     空值
+\end{cnfrmfunc}
+该函数内部将调用memset()函数进行内存赋值。
+\subsubsection{caffe\_gpu\_memset()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     inline void caffe\_gpu\_memset(const size\_t N, const int alpha, void* X)
+   \item{\kai{参数}}\\
+     N - 字节数\\
+     alpha - 初始值\\
+     X - 内存首地址
+   \item{\kai{返回值}}\\
+     空值
+\end{cnfrmfunc}
+该函数内部将调用cudaMemset()函数进行内存赋值（参考~\ref{cuda/mem/init}）。
+% Section X.2.2
+\subsection{内存拷贝}\label{math/mem/cpy}
+\subsubsection{caffe\_gpu\_memcpy()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     void caffe\_gpu\_memcpy(const size\_t N, const void* X, void* Y)
+   \item{\kai{参数}}\\
+     N - 拷贝字节数\\
+     X - 待拷贝内存首地址（设备端）\\
+     Y - 拷贝目的地址（主机端）
+   \item{\kai{返回值}}\\
+     空值
+\end{cnfrmfunc}
+该函数将数据从设备端拷贝至主机端。函数具体实现如下：
+\begin{minted}{c++}
+void caffe_gpu_memcpy(const size_t N, const void* X, void* Y) {
+  if (X != Y) {
+    CUDA_CHECK(cudaMemcpy(Y, X, N, cudaMemcpyDefault));  // NOLINT(caffe/alt_fn)
+  }
+}
+\end{minted}
+通过调用cudaMemcpy()函数实现（参考~\ref{cuda/mem/init}），注意这里的拷贝目的地址Y与使用统一地址空间的设备之间可以分享，函数最后一个参数设置为cudaMemcpyDefault。

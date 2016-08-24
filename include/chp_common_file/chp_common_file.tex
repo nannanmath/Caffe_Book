@@ -1,0 +1,28 @@
+\chapter{common文件}
+在Caffe源代码中有两个文件，名称分别为common.hpp和common.cpp，这里统称为common文件。common文件中包含了一些Caffe中常使用的宏定义、全局初始化函数定义和Caffe类的定义，其中后两者都包含在caffe命名空间中。
+% Section X.1
+\section{常用的宏}
+% Section X.1.1
+\subsection{宏名转为字符串}
+\begin{minted}{c++}
+#define STRINGIFY(m) #m
+#define AS_STRING(m) STRINGIFY(m)
+\end{minted}
+在使用时，如果m是一个宏的名字，那么AS\_STRING(m)将得到一个与该宏名一至的字符串。关于这类含有\#字符的宏的详细说明，请参考\ref{c/macro/sharp}。
+% Section X.1.2
+\subsection{修正gflags的一个问题}
+\begin{minted}{c++}
+#ifndef GFLAGS_GFLAGS_H_
+namespace gflags = google;
+#endif  // GFLAGS_GFLAGS_H_
+\end{minted}
+如代码注释部分所述，对于版本号为2.1的gflags库，其命名空间由原来的google被替换为gflags，因此Caffe通过检查是否存在宏定义GFLAGS\_GFLAGS\_H\_来判断当前gflags的版本，如果为2.1那么就对命名空间名称进行替换。
+% Section X.1.3
+\subsection{禁止对类对象进行拷贝和赋值操作}\label{common/macro/discpy}
+\begin{minted}{c++}
+#define DISABLE_COPY_AND_ASSIGN(classname) \
+private:\
+  classname(const classname&);\
+  classname& operator=(const classname&)
+\end{minted}
+在c++编程中，在有些特殊情况下，往往希望禁止类对象的拷贝和赋值操作，最常见的方法是把对应类中的拷贝构造函数和赋值函数定义为私有类型，并且没有任何实现代码。以上定义的宏就是基于这个思路，使用时，只要在类的声明主体中加入该宏，并将参数改为类名即可。

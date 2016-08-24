@@ -2,7 +2,6 @@
 
 %\includeonly{}
 
-
 \title{\hei\chuhao{Caffe\cite{jia2014caffe}解析}}
 \author{nannanmath}
 
@@ -16,13 +15,10 @@
 \chapter*{前{\quad}言}
 学习Caffe\footnote{http://caffe.berkeleyvision.org/}的设计与实现的细节，从而更好的实现机器学习相关的研究。
 
-
-
 % \pagenumbering{roman}
 \tableofcontents
 \listoffigures
 \listoftables
-
 
 %\pagenumbering{arabic}
 \mainmatter
@@ -45,7 +41,7 @@ shared\_ptr智能指针
 \section{日志功能glog库}\label{deps/glog}
 
 \section{程序参数处理gflags库}\label{deps/gflags}
-fdsfdsfasdfadsf
+
 \section{单元测试gtest库}
 
 \section{结构化protobuf库}
@@ -82,42 +78,29 @@ cv::Mat(cv::Size, type, cv::Scalar)
 
 \include{include/chp_from_tools/caffe_cpp}
                     
-
-
-
 \section{特征提取extract\_feature.cpp}
 
 \section{网络微调finetune\_net.cpp}
 
 \part{Caffe的内部实现}
+% Chapter: 数学运算及辅助函数
+% Path： include/chp_math_funcs/
+\include{include/chp_math_funcs/chp_math_funcs}
 
-\chapter{common文件}
-在Caffe源代码中有两个文件，名称分别为common.hpp和common.cpp，这里统称为common文件。common文件中包含了一些Caffe中常使用的宏定义、全局初始化函数定义和Caffe类的定义，其中后两者都包含在caffe命名空间中。
-\section{常用的宏}
-\subsection{宏名转为字符串}
-\begin{minted}{c++}
-#define STRINGIFY(m) #m
-#define AS_STRING(m) STRINGIFY(m)
-\end{minted}
-在使用时，如果m是一个宏的名字，那么AS\_STRING(m)将得到一个与该宏名一至的字符串。关于这类含有\#字符的宏的详细说明，请参考\ref{c/macro/sharp}。
-\subsection{修正gflags的一个问题}
-\begin{minted}{c++}
-#ifndef GFLAGS_GFLAGS_H_
-namespace gflags = google;
-#endif  // GFLAGS_GFLAGS_H_
-\end{minted}
-如代码注释部分所述，对于版本号为2.1的gflags库，其命名空间由原来的google被替换为gflags，因此Caffe通过检查是否存在宏定义GFLAGS_GFLAGS_H_来判断当前gflags的版本，如果为2.1那么就对命名空间名称进行替换。
-\subsection{禁止对类对象进行拷贝和赋值操作}
-\begin{minted}{c++}
-#define INSTANTIATE_CLASS(classname) \
-  char gInstantiationGuard##classname; \
-  template class classname<float>; \
-  template class classname<double>
-\end{minted}
-在c++编程中，在有些特殊情况下，往往希望禁止类对象的拷贝和赋值操作，最常见的方法是把对应类中的拷贝构造函数和赋值函数定义为私有类型，并且没有任何实现代码。以上定义的宏就是基于这个思路，使用时，只要在类的声明主体中加入该宏，并将参数改为类名即可。
+% Chapter: CUDA辅助宏
+% Path: include/chp_cuda_macro/
+\include{include/chp_cuda_macro/chp_cuda_macro}
 
-\chapter{底层数据管理SyncedMemory类}
-SyncedMemory提供了数据的内存分配、释放以及在主机端（host）与设备端（device）之间的拷贝等功能，是Caffe基本数据存储类型（Blob类）的基础。
+% Chapter: common文件
+% Path: include/chp_common_file/
+\include{include/chp_common_file/chp_common_file}
+
+% Chapter: 底层数据管理syncedmemory类
+% Path: include/chp_syncedmem_cls/
+\include{include/chp_syncedmem_cls/chp_syncedmem_cls}
+
+
+
 
 \chapter{网络中的数据Blob类}
 
@@ -128,6 +111,7 @@ SyncedMemory提供了数据的内存分配、释放以及在主机端（host）�
 \chapter{网络的运行Slover类}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%
 \cnbibliography{bibtex.bib}
 

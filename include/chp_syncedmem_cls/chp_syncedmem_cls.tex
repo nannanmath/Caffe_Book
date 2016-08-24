@@ -1,0 +1,290 @@
+\chapter{底层数据管理SyncedMemory类}
+SyncedMemory提供了数据的内存分配、释放以及在主机端（host）与设备端（device）之间的拷贝等功能，是Caffe基本数据存储类型（Blob类）的基础。
+% section X.1
+\section{内存分配与释放}
+在SyncedMemory.hpp文件中首先定义了caffe命名空间中的两个关于内存分配和释放相关的函数：
+\subsubsection{CaffeMallochost()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     inline void CaffeMallocHost(void** ptr, size\_t size, bool* use\_cuda)
+   \item{\kai{参数}}\\
+     ptr - 指向分配内存的指针\\
+     use\_cuda - 是否要在GPU上分配内存数据
+   \item{\kai{返回值}}\\
+     空值
+   \end{cnfrmfunc}
+函数的具体实现代码：
+\begin{minted}{c++}
+inline void CaffeMallocHost(void** ptr, size_t size, bool* use_cuda) {
+#ifndef CPU_ONLY
+  if (Caffe::mode() == Caffe::GPU) {
+    CUDA_CHECK(cudaMallocHost(ptr, size));
+    *use_cuda = true;
+    return;
+  }
+#endif
+  *ptr = malloc(size);
+  *use_cuda = false;
+  CHECK(*ptr) << "host allocation of size " << size << " failed";
+}
+\end{minted}
+函数CaffeMallocHost()用来对内存进行分配，如果在编译时没有指明只使用CPU模式，那么将调用cudaMallocHost()分配页锁定内存，详细叙述可以参考\ref{cuda/mem/alloc}，然后通过宏CUDA\_CHECK()（参考~\ref{cudamacro/err}）检查内存是否被成功分配。如果指明仅使用CPU模式，那么将调用常规的malloc()函数。
+\subsubsection{CaffeFreehost()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     inline void CaffeFreeHost(void* ptr, bool use\_cuda)
+   \item{\kai{参数}}\\
+     ptr - 指向待释放内存的指针\\
+     use\_cuda - GPU上是否由数据
+   \item{\kai{返回值}}\\
+     空值
+   \end{cnfrmfunc}
+函数的具体实现代码：
+\begin{minted}{c++}
+inline void CaffeFreeHost(void* ptr, bool use_cuda) {
+#ifndef CPU_ONLY
+  if (use_cuda) {
+    CUDA_CHECK(cudaFreeHost(ptr));
+    return;
+  }
+#endif
+  free(ptr);
+}  
+\end{minted}
+函数CaffeFreeHost()用来对分配的内存进行释放。由于分配的内存为页锁定内存，因此调用了cudaFreeHost()函数进行释放（参考~\ref{cuda/mem/free}）。
+
+% Section X.2
+\section{Syncedmemory类的结构}
+% Section X.2.1
+\subsection{成员变量}
+\begin{cntable}{成员变量}{syncedmem/cls/memvar}
+  \begin{tabular}{|c|c|l|}
+    \hline
+    变量名 & 类型 & 功能 \\ \hline
+    cpu\_ptr\_ & void* & 主机端数据指针 \\ \hline
+    gpu\_ptr\_ & void* & 设备端数据指针 \\ \hline
+    size\_ & size\_t &  数据大小 \\ \hline
+    head\_ & Syncedhead & 说明数据所在位置，参考~表\ref{syncedmem/cls/syncedhead} \\ \hline
+    own\_cpu\_data\_ & bool & 主机端指针指向的数据内存是否由该类分配 \\ \hline
+    cpu\_malloc\_use\_cuda\_ & bool & 是否使用GPU，分配页锁定内存 \\ \hline
+    own\_gpu\_data\_ & bool & 设备端指针指向的数据内存是否由该类分配\\ \hline
+    gpu\_device\_ & int & 设备号 \\ \hline
+  \end{tabular}
+\end{cntable}
+其中，size\_t类型在不同操作系统下代表不同长度的类型，在32位系统下，可以理解为unsigned int型，为32位长度；在64位系统像，可以理解为long unsigned int型，为64位长度。目的是为了方便移植。
+
+Syncedhead是一个枚举类型，定义为enum SyncedHead \{ UNINITIALIZED, HEAD\_AT\_CPU, HEAD\_AT\_GPU, SYNCED \}，其具体含义如下表所示：
+\begin{cntable}{SyncedHead枚举类型}{syncedmem/cls/syncedhead}
+  \begin{tabular}{|c|l|}
+    \hline
+    名称 & 说明 \\ \hline
+    UNINITIALIZED & 代表指针没有被初始化过 \\ \hline
+    HEAD\_AT\_CPU & 代表数据位于主机端 \\ \hline
+    HEAD\_AT\_GPU & 代表数据位于设备端 \\ \hline
+    SYNCED & 代表数据已经过同步（设备端和主机端都有） \\ \hline
+  \end{tabular}
+\end{cntable}
+% Section X.2.2
+\subsection{成员函数}
+\subsubsection{构造函数}
+SyncedMemory类的构造函数包含一个无参构造函数和一个含有一个参数的显式构造函数，如下所示：
+\begin{minted}{c++}
+ SyncedMemory()
+      : cpu_ptr_(NULL), gpu_ptr_(NULL), size_(0), head_(UNINITIALIZED),
+        own_cpu_data_(false), cpu_malloc_use_cuda_(false), own_gpu_data_(false),
+        gpu_device_(-1) {}
+  explicit SyncedMemory(size_t size)
+      : cpu_ptr_(NULL), gpu_ptr_(NULL), size_(size), head_(UNINITIALIZED),
+        own_cpu_data_(false), cpu_malloc_use_cuda_(false), own_gpu_data_(false),
+        gpu_device_(-1) {}
+\end{minted}
+关于显式构造函数的详细说明请参考~\ref{c/func/explicit}。
+\subsubsection{析构函数}
+析构函数代码如下：
+\begin{minted}{c++}
+SyncedMemory::~SyncedMemory() {
+  if (cpu_ptr_ && own_cpu_data_) {
+    CaffeFreeHost(cpu_ptr_, cpu_malloc_use_cuda_);
+  }
+
+#ifndef CPU_ONLY
+  if (gpu_ptr_ && own_gpu_data_) {
+    int initial_device;
+    cudaGetDevice(&initial_device);
+    if (gpu_device_ != -1) {
+      CUDA_CHECK(cudaSetDevice(gpu_device_));
+    }
+    CUDA_CHECK(cudaFree(gpu_ptr_));
+    cudaSetDevice(initial_device);
+  }
+#endif  // CPU_ONLY
+}  
+\end{minted}
+析构函数首先要判断cpu\_ptr\_是否不为空和own\_cpu\_data\_是否为真，目的是确保在之前的代码中有主机上的内存被分配，然后调用CaffeFreeHost()函数进行主机端内存释放，通过参数cpu\_malloc\_use\_cuda\_来决定是否进行页锁定内存释放。
+
+对于设备端的内存释放，同理首先判断gpu\_ptr\_是否不为空和own\_gpu\_data\_是否为真，然后通过cudaGetDevice()函数获取当前正在运行设备的设备号，在这里，如果发现已经由显式指定的设备，则通过cudaSetDevice()将该设备设定为当前设备，然后执行GPU端内存释放，最后将该主机线程所控制的设备设置为当前设备。关于cudaGetDevice()和cudaSetDevice()函数的介绍可以参考~\ref{cuda/basic/device}。
+\subsubsection{to\_cpu()}
+该函数负责在主机端分配数据内存或者将设备端的数据拷贝到主机端。
+\begin{minted}{c++}
+inline void SyncedMemory::to_cpu() {
+  switch (head_) {
+  case UNINITIALIZED:
+    CaffeMallocHost(&cpu_ptr_, size_, &cpu_malloc_use_cuda_);
+    caffe_memset(size_, 0, cpu_ptr_);
+    head_ = HEAD_AT_CPU;
+    own_cpu_data_ = true;
+    break;
+  case HEAD_AT_GPU:
+#ifndef CPU_ONLY
+    if (cpu_ptr_ == NULL) {
+      CaffeMallocHost(&cpu_ptr_, size_, &cpu_malloc_use_cuda_);
+      own_cpu_data_ = true;
+    }
+    caffe_gpu_memcpy(size_, gpu_ptr_, cpu_ptr_);
+    head_ = SYNCED;
+#else
+    NO_GPU;
+#endif
+    break;
+  case HEAD_AT_CPU:
+  case SYNCED:
+    break;
+  }
+}
+\end{minted}
+代码中首先通过head\_判断当前所处的状态：如果为UNINITIALIZED那么将调用CaffeMallocHost()函数分配主机端内存，然后使用caffe\_memset()将内存数据赋值为0（参考~\ref{math/mem/init}），并设置head\_为HEAD\_AT\_CPU，own\_cpu\_data\_为true，说明在主机端已经拥有数据；如果为HEAD\_AT\_GPU，首先判断cpu\_ptr\_是否为空，如果为空说明主机端没有分配内存，那么将调用CaffeMallocHost()函数分配主机内存，然后调用caffe\_gpu\_memcpy()函数将GPU端数据拷贝到主机端（参考~\ref{math/mem/cpy}），并设置head\_为SYNCED说明在主机和设备端都拥有数据。
+\subsubsection{to\_gpu()}
+该函数负责在设备端分配数据内存或者将主机端的数据拷贝到设备端。
+\begin{minted}{c++}
+inline void SyncedMemory::to_gpu() {
+#ifndef CPU_ONLY
+  switch (head_) {
+  case UNINITIALIZED:
+    CUDA_CHECK(cudaGetDevice(&gpu_device_));
+    CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
+    caffe_gpu_memset(size_, 0, gpu_ptr_);
+    head_ = HEAD_AT_GPU;
+    own_gpu_data_ = true;
+    break;
+  case HEAD_AT_CPU:
+    if (gpu_ptr_ == NULL) {
+      CUDA_CHECK(cudaGetDevice(&gpu_device_));
+      CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
+      own_gpu_data_ = true;
+    }
+    caffe_gpu_memcpy(size_, cpu_ptr_, gpu_ptr_);
+    head_ = SYNCED;
+    break;
+  case HEAD_AT_GPU:
+  case SYNCED:
+    break;
+  }
+#else
+  NO_GPU;
+#endif
+}
+\end{minted}
+与to\_cpu()相似，首相通过head\_判断目前的状态：如果为UNINITIALIZED，那么获取当前设备号（赋值给gpu\_device\_），然后使用cudaMalloc()在设备端分配内存，并调用caffe\_gpu\_memset()函数对设备端分配的内存进行初始化（参考~\ref{math/mem/init}）；如果为HEAD\_AT\_CPU，则说明数据目前只位于主机端，然么将首先在设备端分配内存，然后调用caffe\_gpu\_memcpy()函数将数据从主机端拷贝至设备端（参考~\ref{math/mem/cpy}）。
+\subsubsection{cpu\_data()}
+该函数返回主机端数据指针，代码如下：
+\begin{minted}{c++}
+const void* SyncedMemory::cpu_data() {
+  to_cpu();
+  return (const void*)cpu_ptr_;
+}
+\end{minted}
+注意该指针为const void*类型，因此指针指向的数据无法被修改（参考~\ref{c/ptr/ptr2const}），同时在使用的时候要进行类型转换。
+\subsubsection{gpu\_data()}
+该函数返回指向设备端数据的指针，代码如下：
+\begin{minted}{c++}
+const void* SyncedMemory::gpu_data() {
+#ifndef CPU_ONLY
+  to_gpu();
+  return (const void*)gpu_ptr_;
+#else
+  NO_GPU;
+  return NULL;
+#endif
+}
+\end{minted}
+程序首先判断是否启用GPU模式，否测调用NO\_GPU宏（参考~\ref{cudamacro/gpumode}）。如果启用GPU模式，注意函数返回的指针同样为const void*类型，因此指针指向的数据无法被修改（参考~\ref{c/ptr/ptr2const}），同时在使用的时候要进行类型转换。
+\subsubsection{mutable\_cpu\_data()}
+该函数返回指向主机端数据的指针，代码如下：
+\begin{minted}{c++}
+void* SyncedMemory::mutable_cpu_data() {
+  to_cpu();
+  head_ = HEAD_AT_CPU;
+  return cpu_ptr_;
+}
+\end{minted}
+该函数与cpu\_data()函数的区别是返回的数据指着不是被指向const修饰类型，因此主要用来对数据进行修改或赋值。实现过程中，首先调用to\_cpu()函数，目的是确保在主机端已经分配数据内存，然后修改head\_为HEAD\_AT\_CPU，从而标识此刻的有效数据存储在主机端，最后返回数据指针。
+\subsubsection{mutable\_gpu\_data()}
+该函数返回指向设备端数据的指针，代码如下：
+\begin{minted}{c++}
+void* SyncedMemory::mutable_gpu_data() {
+#ifndef CPU_ONLY
+  to_gpu();
+  head_ = HEAD_AT_GPU;
+  return gpu_ptr_;
+#else
+  NO_GPU;
+  return NULL;
+#endif
+}
+\end{minted}
+该函数与mutable\_cpu\_data()类似，只是操作的内存位于设备端。
+\subsubsection{set\_cpu\_data()}
+该函数用来修改主机端数据内存指针指向的数据，代码如下：
+\begin{minted}{c++}
+void SyncedMemory::set_cpu_data(void* data) {
+  CHECK(data);
+  if (own_cpu_data_) {
+    CaffeFreeHost(cpu_ptr_, cpu_malloc_use_cuda_);
+  }
+  cpu_ptr_ = data;
+  head_ = HEAD_AT_CPU;
+  own_cpu_data_ = false;
+}
+\end{minted}
+该函数的传入参数是一个内存地址，这个地址所指向的数据将作为SyncedMemory类维护的数据。代码中首先检查当前主机端数据内存指针指向的数据是否由该类分配，这将用于决定是否要使用CaffeFreeHost()函数进行内存释放。然后将SyncedMemory类中的数据指针cpu\_ptr\_指向函数参数传入的地址，并将own\_cpu\_data\_设置为false用来说明cpu\_ptr\_所指向的内存不是由该类分配。
+\subsubsection{set\_gpu\_data()}
+该函数用来修改设备端数据内存指针指向的数据，代码如下：
+\begin{minted}{c++}
+void SyncedMemory::set_gpu_data(void* data) {
+#ifndef CPU_ONLY
+  CHECK(data);
+  if (own_gpu_data_) {
+    int initial_device;
+    cudaGetDevice(&initial_device);
+    if (gpu_device_ != -1) {
+      CUDA_CHECK(cudaSetDevice(gpu_device_));
+    }
+    CUDA_CHECK(cudaFree(gpu_ptr_));
+    cudaSetDevice(initial_device);
+  }
+  gpu_ptr_ = data;
+  head_ = HEAD_AT_GPU;
+  own_gpu_data_ = false;
+#else
+  NO_GPU;
+#endif
+}
+\end{minted}
+该函数与set\_cpu\_data()实现的功能类似，只是要维护的数据位于设备端。代码首先判断设备端数据是否由SyncedMemory类分配，然后获得当前设备号，如果有显示指定的设备号，那么说明要释放的内存应位于显式指定的设备上，因此执行cudaSetDevice()函数切换设备。在释放内存时使用cudaFree()函数用于释放设备端内存，具体可以参考~\ref{cuda/mem/free}。
+\subsubsection{async\_gpu\_push()}
+该函数实现设备端与主机端的异步数据拷贝功能。
+\begin{minted}{c++}
+void SyncedMemory::async_gpu_push(const cudaStream_t& stream) {
+  CHECK(head_ == HEAD_AT_CPU);
+  if (gpu_ptr_ == NULL) {
+    CUDA_CHECK(cudaGetDevice(&gpu_device_));
+    CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
+    own_gpu_data_ = true;
+  }
+  const cudaMemcpyKind put = cudaMemcpyHostToDevice;
+  CUDA_CHECK(cudaMemcpyAsync(gpu_ptr_, cpu_ptr_, size_, put, stream));
+  // Assume caller will synchronize on the stream before use
+  head_ = SYNCED;
+}
+\end{minted}
+代码首先保证主机端拥有数据，然后判断设备端数据指针是否为空，如果为空那么将在设备端分配内存，最后调用cudaMemcpyAsync()函数实现异步数据拷贝。注意该函数的参数是一个CDUA流号，用来将异步拷贝操作分配到指定流上。

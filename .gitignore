@@ -2,6 +2,5 @@
 !/.git/
 !.gitignore
 !main.tex
-!**/*.tex
-!**/figures/
+!include/
 !README.md

@@ -1,0 +1,175 @@
+\chapter{C/C++编程基础}
+Caffe代码使用C/C++语言编写，了解一些C/C++语言的特性是读懂Caffe代码的前提。本章将根据实际情况，对Caffe中所使用的一些C/C++语言特性做简要介绍。
+% Section X.1
+\section{函数}
+% Section X.1.1
+\subsection{内联函数}\label{c/func/inline}
+在C/C++中，内联函数是在定义时加入inline关键字的函数，这种函数在被调用时会在调用点别编译器展开，从而减少函数间调用的开销。但是在现代编译器中，这种展开操作将通过编译器自身进行判断和优化。
+% Section X.1.2
+\subsection{显式构造函数\cite{explicit-constructor}}\label{c/func/explicit}
+在C++中， 带有一个参数的构造函数一般可以承担两个角色：一方面它是一个构造器；另一方面它也是一个默认且隐含的类型转换操作符，具体如下代码所示：
+\begin{minted}{c++}
+class String {
+  String (const char* p); // 用C风格的字符串p作为初始化值
+  //…
+}
+String s1 = "hello"; // 隐式转换，等价于String s1 = String("hello")
+\end{minted}
+但是有的时候可能会不需要这种隐式转换，如下：
+\begin{minted}{c++}
+class String {
+  String (int n); // 本意是预先分配n个字节给字符串
+  String (const char* p); // 用C风格的字符串p作为初始化值
+  //…
+}
+// 下面两种写法比较正常：
+String s2 (10);   // 显式调用，分配10个字节的空字符串
+String s3 = String (10); // 显式调用，分配10个字节的空字符串
+
+// 下面两种写法就比较疑惑了：
+String s4 = 10; // 隐式转换，分配10个字节的空字符串
+String s5 = 'a'; // 隐式转换，分配int('a')个字节的空字符串
+\end{minted}
+s4 和s5 分别把一个int型和char型隐式转换成了分配若干字节的空字符串，容易令人误解。
+为了避免这种错误的发生，我们可以声明显示的转换，使用explicit 关键字：
+\begin{minted}{c++}
+class String {
+  explicit String (int n); // 本意是预先分配n个字节给字符串
+  String (const char* p); // 用C风格的字符串p作为初始化值
+  //…
+}
+\end{minted}
+加上explicit，就抑制了String (int n)的隐式转换，下面两种写法仍然正确：
+\begin{minted}{c++}
+String s2 (10);   // 分配10个字节的空字符串
+String s3 = String (10); // 分配10个字节的空字符串
+\end{minted}
+下面两种写法就不允许了：
+\begin{minted}{c++}
+String s4 = 10; // 编译不通过，不允许隐式的转换
+String s5 = 'a'; // 编译不通过，不允许隐式的转换
+\end{minted}
+因此，某些时候，explicit 可以有效得防止构造函数的隐式转换带来的错误或者误解。
+% Section X.2
+\section{宏}
+% Section X.2.1
+\subsection{do\{...\}while(0)}\label{c/macro/dowhile}
+当我们定义的宏中有多条语句要顺序执行时，在使用这样的宏时就要多加注意，例如下边的情况：
+\begin{minted}{c++}
+#define DOSOMETHING()\
+  foo1();\
+  foo2();
+\end{minted}
+通过宏的方式定义了一个名称为DOSOMETHING()函数，在使用这个宏时，如果通过如下方法：
+\begin{minted}{c++}
+if(a>0)
+  DOSOMETHING();
+\end{minted}
+因为宏在预处理的时候会直接被展开，实际上的代码是这个样子的：
+\begin{minted}{c++}
+if(a>0)
+  foo1();
+foo2();
+\end{minted}
+这就会导致程序逻辑错误，因为无论a是否大于0，foo2()都会被执行。如果使用\{\}将宏中的语句包裹起来，那么宏的定义就是：
+\begin{minted}{c++}
+#define DOSOMETHING() \
+{ \
+  foo1(); \
+  foo2(); \
+}
+\end{minted}
+通过使用上面的调用方式使用该宏，就会得到如下展开：
+\begin{minted}{c++}
+if(a>0)
+{
+  foo1();
+  foo2();
+};
+\end{minted}
+这就会出现编译错误。在实际编程中，为了避免这几种错误，通常使用如下方法定义一个包含多条顺序执行语句的宏。
+\begin{minted}{c++}
+#define DOSOMETHING() \
+  do { \
+    foo1();\
+    foo2();\
+  } while(0)
+\end{minted}
+这种方式的宏定义在Caffe源代码中会经常见到，同时也十分值得我们在编程时借鉴使用。
+% Section X.2.2
+\subsection{带有\#和\#\#的宏}\label{c/macro/sharp}
+简单的说，\#\#把前后两个符号连接起来，而\#则返回一个与后边符号一至的字符串。同时，对于使用\#的宏，在展开时与普通宏页存在差异，下面通过一个例子进行说明。
+\begin{minted}{c++}
+#define f(a,b) a##b
+#define d(a) #a
+#define s(a) d(a) 
+\end{minted}
+如上方式定义三个宏，并通过如下方法进行调用：
+\begin{minted}{c++}
+void main( void ) {
+  puts(d(f(a,b)));
+  puts(s(f(a,b)));
+} 
+\end{minted}
+输出的结果分别为：
+\begin{minted}{c++}
+f(a,b)
+ab
+\end{minted}
+对于宏d(a)，由于是以\#开头，因此在语句puts(d(f(a,b)))中，其参数直接替换，不进行展开。而对于宏s(a)，由于不是以\#开头，因此在语句puts(s(f(a,b)))中，其参数要先进行展开，然后再进行替换。
+% Section X.3
+\section{指针}
+% Section X.3.1
+\subsection{const指针}\label{c/ptr/constptr}
+const指针是指：指针本身为const，也就是说指针指向的数据可以被修改但是指针本身存储的地址不能改变。如下所示：
+\begin{minted}{c++}
+  int a = 3;
+  int b = 4;
+  int* const ptr = &a; //定义一个const指针，必须被初始化
+
+  *ptr = 4; // 可以成功执行
+  ptr = &b; // 编译错误
+\end{minted}
+% Section X.3.2
+\subsection{指向const的指针}\label{c/ptr/ptr2const}
+指向const的指针是指：指针指向一个const修饰的变量类型，因此指针指向的内存里的变量值不可以被修改，但是指针本身存储的地址值可以被修改。如下所示：
+\begin{minted}{c++}
+  int a = 3;
+  int b = 4;
+  const int* ptr; //定义一个const指针，可以不初始化
+
+  *ptr = 4; // 编译错误
+  ptr = &b; // 可以成功编译
+\end{minted}
+
+\section{C/C++标准库}
+类型：
+std::vector<>
+std::pair<>
+方法：
+std::partial\_sort()
+std::cout << std::fixed << std::setprecision(4)
+
+\section{常用头文件介绍}
+\begin{itemize}
+\item <climits> \\
+  说明
+\item <cmath> \\
+  数学库
+\item <fstream> \\
+  文件流
+\item <iostream> \\
+  输入输出流
+\item <map> \\
+  映射
+\item <set> \\
+  集合
+\item <sstream> \\
+  流
+\item <string> \\
+  字符串
+\item <utility> \\
+  pair
+\item <vector> \\
+  向量
+\end{itemize}

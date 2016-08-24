@@ -1,0 +1,23 @@
+\chapter{CUDA辅助宏}
+Caffe中定义了一些列的宏和函数对CUDA相关操作做了一定的处理，这些宏和函数一头文件的形式保存在device\_alternate.hpp中，下边将对其做简要介绍。
+% Section X.1
+\section{GPU模式相关}\label{cudamacro/gpumode}
+\subsubsection{NO\_GPU宏}
+该宏一般在检测到程序没有启用GPU模式时被调用，宏内部使用了glog库，显示一段字符串标明没有使用GPU模式。
+\begin{minted}{c++}
+#define NO_GPU LOG(FATAL) << "Cannot use GPU in CPU-only Caffe: check mode."
+\end{minted}
+% Section X.2
+\section{CUDA返回错误处理}\label{cudamacro/err}
+\subsubsection{CUDA\_CHECK()宏}
+检测CUDA函数的返回值是否出错，通过gtest库判断返回值是否为error，如果为error则调用cudaGetErrorString()（参考\ref{cuda/err}）函数输出错误信息。
+\begin{minted}{c++}
+#define CUDA_CHECK(condition) \
+  /* Code block avoids redefinition of cudaError_t error */ \
+  do { \
+    cudaError_t error = condition; \
+    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
+  } while (0)
+\end{minted}
+% Section X.3
+\section{CUDA线程相关}
