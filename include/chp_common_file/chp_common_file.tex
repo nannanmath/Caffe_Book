@@ -26,3 +26,110 @@ private:\
   classname& operator=(const classname&)
 \end{minted}
 在c++编程中，在有些特殊情况下，往往希望禁止类对象的拷贝和赋值操作，最常见的方法是把对应类中的拷贝构造函数和赋值函数定义为私有类型，并且没有任何实现代码。以上定义的宏就是基于这个思路，使用时，只要在类的声明主体中加入该宏，并将参数改为类名即可。
+% Section X.1.4
+\subsection{未实现代码}\label{common/macro/notimpl}
+\begin{minted}{c++}
+#define NOT_IMPLEMENTED LOG(FATAL) << "Not Implemented Yet"
+\end{minted}
+该宏通过使用glog库中的LOG(FATAL)对未实现的代码进行说明。在程序执行过程中，一但执行到该宏，便输出Not Implemented Yet字符串，同时程序中止执行。
+% Section X.1.5
+\subsection{初始化模板类}\label{common/macro/instantiate}
+\begin{minted}{c++}
+#define INSTANTIATE_CLASS(classname) \
+  char gInstantiationGuard##classname; \
+  template class classname<float>; \
+  template class classname<double>
+\end{minted}
+该宏首先根据类名定义一个char型变量，名称为gInstantiationGuard\#\#classname，然后使用float和double类型分别初始化两个相应的模板类。
+
+% Section X.2
+\section{错误类型}
+% Section X.2.1
+\subsection{CUBLAS错误}\label{common/err/cublas}
+\begin{minted}{c++}
+const char* cublasGetErrorString(cublasStatus_t error) {
+  switch (error) {
+  case CUBLAS_STATUS_SUCCESS:
+    return "CUBLAS_STATUS_SUCCESS";
+  case CUBLAS_STATUS_NOT_INITIALIZED:
+    return "CUBLAS_STATUS_NOT_INITIALIZED";
+  case CUBLAS_STATUS_ALLOC_FAILED:
+    return "CUBLAS_STATUS_ALLOC_FAILED";
+  case CUBLAS_STATUS_INVALID_VALUE:
+    return "CUBLAS_STATUS_INVALID_VALUE";
+  case CUBLAS_STATUS_ARCH_MISMATCH:
+    return "CUBLAS_STATUS_ARCH_MISMATCH";
+  case CUBLAS_STATUS_MAPPING_ERROR:
+    return "CUBLAS_STATUS_MAPPING_ERROR";
+  case CUBLAS_STATUS_EXECUTION_FAILED:
+    return "CUBLAS_STATUS_EXECUTION_FAILED";
+  case CUBLAS_STATUS_INTERNAL_ERROR:
+    return "CUBLAS_STATUS_INTERNAL_ERROR";
+#if CUDA_VERSION >= 6000
+  case CUBLAS_STATUS_NOT_SUPPORTED:
+    return "CUBLAS_STATUS_NOT_SUPPORTED";
+#endif
+#if CUDA_VERSION >= 6050
+  case CUBLAS_STATUS_LICENSE_ERROR:
+    return "CUBLAS_STATUS_LICENSE_ERROR";
+#endif
+  }
+  return "Unknown cublas status";
+}
+\end{minted}
+事实上，由于cuBLAS库中并不存在此函数的定义，而为了与cudaGetErrorString()函数保持一致，因此Caffe中定义了此函数。
+% Section X.2.2
+\subsection{CURAND错误}\label{common/err/curand}
+\begin{minted}{c++}
+const char* curandGetErrorString(curandStatus_t error) {
+  switch (error) {
+  case CURAND_STATUS_SUCCESS:
+    return "CURAND_STATUS_SUCCESS";
+  case CURAND_STATUS_VERSION_MISMATCH:
+    return "CURAND_STATUS_VERSION_MISMATCH";
+  case CURAND_STATUS_NOT_INITIALIZED:
+    return "CURAND_STATUS_NOT_INITIALIZED";
+  case CURAND_STATUS_ALLOCATION_FAILED:
+    return "CURAND_STATUS_ALLOCATION_FAILED";
+  case CURAND_STATUS_TYPE_ERROR:
+    return "CURAND_STATUS_TYPE_ERROR";
+  case CURAND_STATUS_OUT_OF_RANGE:
+    return "CURAND_STATUS_OUT_OF_RANGE";
+  case CURAND_STATUS_LENGTH_NOT_MULTIPLE:
+    return "CURAND_STATUS_LENGTH_NOT_MULTIPLE";
+  case CURAND_STATUS_DOUBLE_PRECISION_REQUIRED:
+    return "CURAND_STATUS_DOUBLE_PRECISION_REQUIRED";
+  case CURAND_STATUS_LAUNCH_FAILURE:
+    return "CURAND_STATUS_LAUNCH_FAILURE";
+  case CURAND_STATUS_PREEXISTING_FAILURE:
+    return "CURAND_STATUS_PREEXISTING_FAILURE";
+  case CURAND_STATUS_INITIALIZATION_FAILED:
+    return "CURAND_STATUS_INITIALIZATION_FAILED";
+  case CURAND_STATUS_ARCH_MISMATCH:
+    return "CURAND_STATUS_ARCH_MISMATCH";
+  case CURAND_STATUS_INTERNAL_ERROR:
+    return "CURAND_STATUS_INTERNAL_ERROR";
+  }
+  return "Unknown curand status";
+}
+\end{minted}
+事实上，由于cuBLAS库中并不存在此函数的定义，而为了与cudaGetErrorString()函数保持一致，因此Caffe中定义了此函数。
+% Section X.3
+\section{Caffe类}
+Caffe类是Caffe程序运行时实例化的第一个类，该类的功能是完成Caffe程序正常运行所需的准备工作。
+% Section X.3.1
+\subsection{成员变量}
+\begin{cntable}{成员变量}{blob/cls/memvar}
+  \begin{tabular}{|c|c|l|}
+    \hline
+    变量名 & 类型 & 功能 \\ \hline
+    cublas\_handle\_ & cublasHandle\_t & cuBLAS库句柄 \\ \hline
+    curand\_generator\_ & curandGenerator\_t & 违随机数生成器句柄 \\ \hline
+    random\_generator\_ & shared\_ptr<RNG> & 指向RNG对象指针 \\ \hline
+    mode\_ & Brew & 运行模式（枚挙型） \\ \hline
+    solver\_count\_ & int & solver个数 \\ \hline
+    root\_solver\_ & bool & 是否为主solver \\ \hline
+    RNG & class & 内部类 \\ \hline
+  \end{tabular}
+\end{cntable}
+其中的Brew枚挙类型是定义Caffe程序的运行模式，包括CPU和GPU两种模式。

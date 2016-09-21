@@ -7,6 +7,7 @@
     "c/macro/dowhile"
     "c/macro/sharp"
     "c/ptr/constptr"
-    "c/ptr/ptr2const"))
+    "c/ptr/ptr2const"
+    "c/type/static"))
  :latex)
 

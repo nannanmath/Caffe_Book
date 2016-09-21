@@ -1,5 +1,5 @@
 \chapter{底层数据管理SyncedMemory类}
-SyncedMemory提供了数据的内存分配、释放以及在主机端（host）与设备端（device）之间的拷贝等功能，是Caffe基本数据存储类型（Blob类）的基础。
+SyncedMemory类提供了数据的内存分配、释放以及在主机端（host）与设备端（device）之间的拷贝等功能，是Caffe基本数据存储类型（Blob类）的基础。
 % section X.1
 \section{内存分配与释放}
 在SyncedMemory.hpp文件中首先定义了caffe命名空间中的两个关于内存分配和释放相关的函数：
@@ -287,4 +287,4 @@ void SyncedMemory::async_gpu_push(const cudaStream_t& stream) {
   head_ = SYNCED;
 }
 \end{minted}
-代码首先保证主机端拥有数据，然后判断设备端数据指针是否为空，如果为空那么将在设备端分配内存，最后调用cudaMemcpyAsync()函数实现异步数据拷贝。注意该函数的参数是一个CDUA流号，用来将异步拷贝操作分配到指定流上。
+代码首先保证主机端拥有数据，然后判断设备端数据指针是否为空，如果为空那么将在设备端分配内存，最后调用cudaMemcpyAsync()函数实现异步数据拷贝（请参考~\ref{cuda/mem/init}）。注意该函数的参数是一个CDUA流号，用来将异步拷贝操作分配到指定流上。

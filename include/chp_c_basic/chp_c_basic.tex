@@ -141,7 +141,81 @@ const指针是指：指针本身为const，也就是说指针指向的数据可�
   *ptr = 4; // 编译错误
   ptr = &b; // 可以成功编译
 \end{minted}
+% Section X.4
+\section{类型转换}
+C++提供了四个转换运算符：
+const\_cast <type-id> (expression)、static\_cast <type-id> (expression)、reinterpret\_cast <type-id> (expression)和dynamic\_cast <type-id> (expression)。
+% Section X.4.1
+\subsection{static\_cast <type-id> (expression)}\label{c/type/static}
+该运算符把expression转换为type-id类型，转换过程在编译时完成，因此没有运行时类型检查来保证转换的安全性。static\_cast不能转换掉expression的const、volatile、或者\_\_unaligned属性。在基类与派生类之间指针或引用的转换中，该运算符进行上行转换（把派生类的指针或引用转换成基类表示）是安全的；进行下行转换（把基类指针或引用转换成派生类表示）时，由于没有动态类型检查，所以是不安全的。
+% Section X.4.2
+\subsection{dynamic\_cast <type-id> (expression)}
+该运算符通常在基类和派生类之间转换时使用，转换过程发生在运行时，因此具有类型检查的功能，比static\_cast更安全。在基类与派生类之间指针或引用的转换，该运算符进行上行转换（把派生类的指针或引用转换成基类表示）是安全的；进行下行转换（把基类指针或引用转换成派生类表示）时，如果基类指针或者引用确实指向一个派生类对象，这个运算符会传回适当转型过的指针；如果基类指针或者引用没有指向一个派生类对象，这个运算符会传回空指针。具体例子如下：
+\begin{minted}{c++}
+#include <iostream>  
+using namespace std;  
+class A {  
+ public:  virtual void show() {  
+   std::cout<<"A::show()"<<endl;  
+ }  
+};  
+class B : public A {  
+ public:
+  virtual void show() {   
+    std::cout<<"B::show()"<<endl;  
+  }  
+};  
 
+int main() {  
+  A* pa=new A();  
+  B* pb=new B();  
+  cout<<"-------- 1 ----------"<<endl;  
+  static_cast<A*>(pb)->show(); //print:"B::show()"  
+  cout<<"-------- 2 ----------"<<endl;  
+  dynamic_cast<A*>(pb)->show();//also print:"B::show()"  
+  cout<<"-------- 3 ----------"<<endl;  
+  static_cast<B*>(pa)->show(); //print:"A::show()"   
+  cout<<"-------- 4 ----------"<<endl;  
+  //dynamic_cast<B*>(pa)->show(); //此处会出现异常  
+  if((pb = dynamic_cast<B*>(pa))) {  
+    pb->show();  
+  } else {  
+    cout << "dynamic cast fail" << endl;  
+  }  
+}  
+\end{minted}
+% Section X.4.3
+\subsection{const\_cast <type-id> (expression)}
+该运算符用来转换掉表达式的const性质的。例子如下：
+\begin{minted}{c++}
+const char m = 't';  
+const char *cm = &m;  
+char *n = const_cast<char*>(cm);  
+*n = 'a';  
+cout << *n << endl; 
+\end{minted}
+% Section X.4.4
+\subsection{reinterpret\_cast <type-id> (expression)}
+该运算符是强制类型转换符，用来处理无关类型的转换，通常为操作数的位模式提供较低层次的重新解释，但是并没有进行二进制的转换。它可以用在任意的指针之间的转换，引用之间的转换，指针和足够大的int型之间的转换，整数到指针的转换。例子如下：
+
+\begin{minted}{c++}
+int *pi;  
+char *pc = reinterpret_cast<char*>(pi);
+\end{minted}
+下面给出一个实际应用的例子，基于地址的哈希编码：
+\begin{minted}{c++}
+unsigned short Hash( void *p ) {  
+  unsigned int val = reinterpret_cast<unsigned int>( p );  
+  return ( unsigned short )( val ^ (val >> 16));
+}
+
+using namespace std;  
+int main() {  
+  int a[20];  
+  for ( int i = 0; i < 20; i++ )  
+    cout << Hash( a + i ) << endl;  
+}  
+\end{minted}
 \section{C/C++标准库}
 类型：
 std::vector<>
@@ -153,7 +227,7 @@ std::cout << std::fixed << std::setprecision(4)
 \section{常用头文件介绍}
 \begin{itemize}
 \item <climits> \\
-  说明
+  其中定义了常用数据类型的最小和最大值。
 \item <cmath> \\
   数学库
 \item <fstream> \\
@@ -172,4 +246,6 @@ std::cout << std::fixed << std::setprecision(4)
   pair
 \item <vector> \\
   向量
+\item <algorithm> \\
+  
 \end{itemize}

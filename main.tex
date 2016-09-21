@@ -33,34 +33,11 @@
 % Path: include/chp_cuda_basic/
 \include{include/chp_cuda_basic/chp_cuda_basic}
 
-\chapter{Caffe的依赖库}
-Caffe代码的实现依赖了大量第三方功能库（特别是使用了多个Google公司的开源库），在“站在巨人的肩膀上”的同时，也为Caffe代码的学习带来一定困难。本章将对这些依赖库的功能和使用做简要介绍。
-\section{准标准库Boost}
-\subsection{智能指针}\label{deps/boost/pointer}
-shared\_ptr智能指针
-\section{日志功能glog库}\label{deps/glog}
+% Chapter: Caffe的依赖库
+% Path: include/chp_deps_libs/
+\include{include/chp_deps_libs/chp_deps_libs}
 
-\section{程序参数处理gflags库}\label{deps/gflags}
 
-\section{单元测试gtest库}
-
-\section{结构化protobuf库}
-
-\section{图像处理opencv库}
-类型：
-cv::Size
-cv::Scalar
-方法：
-cv::merge()
-cv::mean()
-cv::cvtColor()
-cv::resize()
-cv::Mat的convertTo()
-cv::subtract()
-cv::splite()
-cv::imread()
-cv::Mat(height, width, type, data)
-cv::Mat(cv::Size, type, cv::Scalar)
 \chapter{Caffe的层次}
 
 \part{Caffe的外部调用}
@@ -95,15 +72,17 @@ cv::Mat(cv::Size, type, cv::Scalar)
 % Path: include/chp_common_file/
 \include{include/chp_common_file/chp_common_file}
 
+% Chapter: Proto文件
+% Path: include/chp_proto_file/
+\include{include/chp_proto_file/chp_proto_file}
+
 % Chapter: 底层数据管理syncedmemory类
 % Path: include/chp_syncedmem_cls/
 \include{include/chp_syncedmem_cls/chp_syncedmem_cls}
 
-
-
-
-\chapter{网络中的数据Blob类}
-
+% Chapter: 网络中的数据Blob类
+% Path: include/chp_blob_cls/
+\include{include/chp_blob_cls/chp_blob_cls}
 \chapter{网络定义Layer类}
 
 \chapter{网络管理Net类}
@@ -127,5 +106,5 @@ cv::Mat(cv::Size, type, cv::Scalar)
 
 %%% Local Variables:
 %%% mode: latex
-%%% TeX-master: t
+%%% TeX-master: 
 %%% End:

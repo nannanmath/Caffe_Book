@@ -10,7 +10,7 @@ Caffe中定义了一些列的宏和函数对CUDA相关操作做了一定的处�
 % Section X.2
 \section{CUDA返回错误处理}\label{cudamacro/err}
 \subsubsection{CUDA\_CHECK()宏}
-检测CUDA函数的返回值是否出错，通过gtest库判断返回值是否为error，如果为error则调用cudaGetErrorString()（参考\ref{cuda/err}）函数输出错误信息。
+检测CUDA函数的返回值是否出错，通过glog库的CHECK宏判断返回值是否为error，如果为error则调用cudaGetErrorString()（参考\ref{cuda/err}）函数输出错误信息。
 \begin{minted}{c++}
 #define CUDA_CHECK(condition) \
   /* Code block avoids redefinition of cudaError_t error */ \
@@ -19,5 +19,26 @@ Caffe中定义了一些列的宏和函数对CUDA相关操作做了一定的处�
     CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
   } while (0)
 \end{minted}
+\subsubsection{CUBLAS\_CHECK()宏}
+检测CUDA函数的返回值是否出错，通过glog库的CHECK宏判断返回值是否为error，如果为error则调用cublasGetErrorString()（参考\ref{common/err/cublas}）函数输出错误信息。
+\begin{minted}{c++}
+#define CUBLAS_CHECK(condition) \
+  do { \
+    cublasStatus_t status = condition; \
+    CHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " \
+      << caffe::cublasGetErrorString(status); \
+  } while (0)
+\end{minted}
+\subsubsection{CURAND\_CHECK()宏}
+检测CUDA函数的返回值是否出错，通过glog库的CHECK宏判断返回值是否为error，如果为error则调用curandGetErrorString()（参考\ref{common/err/curand}）函数输出错误信息。
+\begin{minted}{c++}
+#define CURAND_CHECK(condition) \
+  do { \
+    curandStatus_t status = condition; \
+    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << " " \
+      << caffe::curandGetErrorString(status); \
+  } while (0)
+\end{minted}
+
 % Section X.3
 \section{CUDA线程相关}

@@ -3,9 +3,207 @@ Caffe将底层的数学运算和一些辅助函数专门进行了分离，统一
 % Section X.1
 \section{数学运算函数}
 % Section X.1.1
-\subsection{CPU函数}
+\subsection{CPU函数}\label{math/cpu/alg}
+\subsubsection{caffe\_axpy()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     template <>\\
+     void caffe\_axpy<float>(const int N, const float alpha, const float* X, float* Y)\\
+     
+     template <>\\
+     void caffe\_axpy<double>(const int N, const float alpha, const float* X, float* Y)
+   \item{\kai{参数}}\\
+     N - 元素个数\\
+     alpha - 系数\\
+     X - 数组X首地址\\
+     Y - 数组Y首地址
+   \item{\kai{返回值}}\\
+     空值
+\end{cnfrmfunc}
+该函数通过调用cblas\_saxpy()和cblas\_daxpy()函数(参考\ref{deps/blas/cpu})在主机端完成如下所示运算：
+$$
+Y[i] = \alpha * X[i] + Y[i]
+$$
+\subsubsection{caffe\_cpu\_asum()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     template <>\\
+     float caffe\_cpu\_asum<float>(const int n, const float* x)\\
+
+     template <>\\
+     double caffe\_cpu\_asum<double>(const int n, const double* x)
+   \item{\kai{参数}}\\
+     n - 元素个数\\
+     x - 数组x首地址
+   \item{\kai{返回值}}\\
+     float或double
+\end{cnfrmfunc}
+该函数通过调用cblas\_sasum()和cblas\_dasum()函数(参考\ref{deps/blas/cpu})在主机端完成如下所示运算：
+$$
+return = \sum\limits_{i}^{n} x[i]
+$$
+\subsubsection{caffe\_cpu\_strided\_dot()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     template <>\\
+     float caffe\_cpu\_strided\_dot<float>(const int n, const float* x, const int incx, const float* y, const int incy)\\
+
+     template <>\\
+     double caffe\_cpu\_strided\_dot<double>(const int n, const double* x, const int incx, const double* y, const int incy)
+   \item{\kai{参数}}\\
+     n - 元素个数\\
+     x - 数组x首地址\\
+     incx - 数组x的计算间隔\\
+     y - 数组y首地址\\
+     incy - 数组y的计算间隔
+   \item{\kai{返回值}}\\
+     float或double
+\end{cnfrmfunc}
+该函数通过调用此blas\_sdot()和cblas\_ddot()函数(参考\ref{deps/blas/cpu})在主机端完成如下所示运算：
+$$
+return = \sum\limits_{i}^{n} x[i]*y[i]
+$$
+\subsubsection{caffe\_cpu\_dot()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     template <typename Dtype>\\
+     Dtype caffe\_cpu\_dot(const int n, const Dtype* x, const Dtype* y)\\
+
+     template\\
+     float caffe\_cpu\_dot<float>(const int n, const float* x, const float* y)\\
+
+     template\\
+     double caffe\_cpu\_dot<double>(const int n, const double* x, const double* y)
+   \item{\kai{参数}}\\
+     n - 元素个数\\
+     x - 数组x首地址\\
+     y - 数组y首地址
+   \item{\kai{返回值}}\\
+     float或double
+\end{cnfrmfunc}
+该函数通过调用caffe\_cpu\_strided\_dot()函数(该函数依然为Caffe自定义的函数)在主机端完成如下所示运算：
+$$
+return = \sum\limits_{i}^{n} x[i]*y[i]
+$$
+\subsubsection{caffe\_scal()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     template <>\\
+     void caffe\_scal<float>(const int N, const float alpha, float *X)\\
+
+     template<>\\
+     void caffe\_scal<double>(const int N, const double alpha, double *X)
+   \item{\kai{参数}}\\
+     N - 元素个数\\
+     alpha - 数组x首地址\\
+     X - 数组X首地址
+   \item{\kai{返回值}}\\
+     空值
+\end{cnfrmfunc}
+该函数通过调用cblas\_sscal()和cblas\_dscal()函数(参考\ref{deps/blas/cpu})在主机端完成如下所示运算：
+$$
+X[i] = alpha * X[i]
+$$
+\subsubsection{caffe\_copy()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     template <typename Dtype>\\
+     void caffe\_copy(const int N, const Dtype* X, Dtype* Y)\\
+  
+     template void caffe\_copy<int>(const int N, const int* X, int* Y)\\
+     template void caffe\_copy<unsigned int>(const int N, const unsigned int* X, unsigned int* Y)\\
+     template void caffe\_copy<float>(const int N, const float* X, float* Y)\\
+     template void caffe\_copy<double>(const int N, const double* X, double* Y)
+   \item{\kai{参数}}\\
+     N - 元素个数\\
+     X - 数组X首地址\\
+     Y - 数组Y首地址
+   \item{\kai{返回值}}\\
+     空值
+\end{cnfrmfunc}
+该函数内部通过调用memcpy()和cudaMemcpy()函数在主机端和设备端完成拷贝操作。
+
 % Section X.1.2
-\subsection{GPU函数}
+\subsection{GPU函数}\label{math/gpu/alg}
+\subsubsection{caffe\_gpu\_axpy()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     template <>\\
+     void caffe\_gpu\_axpy<float>(const int N, const float alpha, const float* X, float* Y) \\
+
+     template <>\\
+     void caffe\_gpu\_axpy<double>(const int N, const float alpha, const float* X, float* Y)
+   \item{\kai{参数}}\\
+     N - 元素个数\\
+     alpha - 系数\\
+     X - 数组X首地址\\
+     Y - 数组Y首地址
+   \item{\kai{返回值}}\\
+     空值
+\end{cnfrmfunc}
+该函数通过调用cublasSaxpy()和cublasDaxpy()函数(参考\ref{deps/blas/gpu})在设备端完成如下所示运算：
+$$
+Y[i] = \alpha * X[i] + Y[i]
+$$
+\subsubsection{caffe\_gpu\_asum()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     template <>\\
+     void caffe\_gpu\_asum<float>(const int n, const float* x, float* y)\\
+
+     template <>\\
+     void caffe\_gpu\_asum<double>(const int n, const double* x, double* y)
+   \item{\kai{参数}}\\
+     n - 元素个数\\
+     x - 数组x首地址\\
+     y - 存储计算结果
+   \item{\kai{返回值}}\\
+     空值
+\end{cnfrmfunc}
+该函数通过调用cublasSasum()和cublasDasum()函数(参考\ref{deps/blas/gpu})在设备端完成如下所示运算：
+$$
+y = \sum\limits_{i}^{n}x[i]
+$$
+\subsubsection{caffe\_gpu\_dot()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     template <>\\
+     void caffe\_gpu\_dot<float>(const int n, const float* x, const float* y, float* out)\\
+
+     template <>\\
+     void caffe\_gpu\_dot<double>(const int n, const double* x, const double* y, double* out) 
+   \item{\kai{参数}}\\
+     n - 元素个数\\
+     x - 数组x首地址\\
+     y - 数组y首地址\\
+     out - 存储计算结果
+   \item{\kai{返回值}}\\
+     空值
+\end{cnfrmfunc}
+该函数通过调用cublasSdot()和cublasDdot()函数(参考\ref{deps/blas/gpu})在设备端完成如下所示运算：
+$$
+out = \sum\limits_{i}^{n}x[i]*y[i]
+$$
+\subsubsection{caffe\_gpu\_scal()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\
+     template <>\\
+     void caffe\_gpu\_scal<float>(const int N, const float alpha, float *X)\\
+
+     template <>\\
+     void caffe\_gpu\_scal<double>(const int N, const double alpha, double *X)
+   \item{\kai{参数}}\\
+     N - 元素个数\\
+     alpha - 系数\\
+     X - 数组X首地址\\
+   \item{\kai{返回值}}\\
+     空值
+\end{cnfrmfunc}
+该函数通过调用cublasSscal()和cublasDscal()函数(参考\ref{deps/blas/gpu})在设备端完成如下所示运算：
+$$
+X[i] = alpha * X[i]
+$$
+
 % Section X.2
 \section{存储操作}
 % Section X.2.1

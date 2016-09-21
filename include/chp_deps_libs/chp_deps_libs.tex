@@ -1,0 +1,246 @@
+\chapter{Caffe的依赖库}
+Caffe代码的实现依赖了大量第三方功能库（特别是使用了多个Google公司的开源库），在“站在巨人的肩膀上”的同时，也为Caffe代码的学习带来一定困难。本章将对这些依赖库的功能和使用做简要介绍。
+% Section X.1
+\section{准标准库Boost}
+Boost库定义在namespace boost中。
+% Section X.1.1
+\subsection{智能指针}\label{deps/boost/ptr}
+\subsubsection{scoped\_ptr<T>}
+scoped\_ptr<T>是Boost中最简单的智能指针，当指针离开其作用域时候，释放相关资源。需要特别注意的一点是scoped\_ptr<T>不能共享指针的所有权也不能转移所有权，因此该指针不能作为函数返回值使用。
+\begin{minted}{c++}
+class test { 
+ public: 
+  void print() { 
+    cout << "test print now" <<endl; 
+  } 
+};
+
+int _tmain(int argc, _TCHAR* argv[]) { 
+  boost::scoped_ptr<test> x(new test); 
+  x->print(); 
+  return 0; 
+}
+\end{minted}
+\subsubsection{shared\_ptr<T>}
+shared\_ptr<T>是Boost智能指针中最常使用的指针，该指针中包含一个引用计数器，当类型为T的对象的引用数量为0时，该对象所在的堆内存会被自动释放。这里要注意的是该指针不能指向一块动态增长的内存（可以使用share\_array<T>代替）。
+\begin{minted}{c++}
+class test { 
+ public: 
+  void print() { 
+    cout << "test print now" <<endl; 
+  } 
+};
+
+int _tmain(int argc, _TCHAR* argv[]) { 
+  boost::shared_ptr<test> ptr_1(new test); 
+  ptr_1->print();//引用计数为1
+  boost::shared_ptr<test> ptr_2 = ptr_1; 
+  ptr_2->print();//引用计数为2
+  ptr_1->print();//引用计数还是为2
+  return 0; 
+}
+\end{minted}
+\subsubsection{weak\_ptr<T>}
+weak\_ptr是一个弱指针，它可以共享一个share\_ptr的内存，但是无论是构造还是析构一个weak\_ptr 都不会影响引用计数器。
+\subsubsection{intrusive\_ptr<T>}
+intrusive\_ptr和share\_ptr功能一样，但比share\_ptr效率高，不过intrusive\_ptr要求类型T本身维护一个引用计数器。
+\subsubsection{scoped\_array<T> 和 shared\_array<T>}
+shared\_ptr和scoped\_ptr不能用于数组的内存，所以shared\_array和scoped\_array可以作为他们的代替品。但是，这里还是建议使用std::vector<shared\_ptr>。
+\begin{minted}{c++}
+int _tmain(int argc, _TCHAR* argv[]) { 
+  const int size = 10; 
+  boost::shared_array<test> a(new test[]);
+  for (int i = 0; i < size; ++i) 
+    a[i].print();
+  return 0; 
+}
+\end{minted}
+
+% Section X.2
+\section{日志功能glog库}\label{deps/glog}
+% Section X.3
+\section{程序参数处理gflags库}\label{deps/gflags}
+% Section X.4
+\section{单元测试gtest库}
+% Section X.5
+\section{结构化protobuffer库}\label{deps/protobuf}
+全称为Protocol Buffers，是一种结构化数据存储格式，可以对存储数据进行序列化和反序列化，可用于网络中的结构化数据传输。在Caffe中，protobuffer主要用来存储和管理支持网络运行的各种相关参数，它可以将参数以对象的形式序列化后存储于二进制文件中，然后通过反序列化对其进行读取。
+% Section X.5.1
+\subsection{使用介绍}
+% Section X.5.2
+\subsection{Caffe中Protobuffer的结构}
+
+% Section X.6
+\section{图像处理opencv库}
+类型：
+cv::Size
+cv::Scalar
+方法：
+cv::merge()
+cv::mean()
+cv::cvtColor()
+cv::resize()
+cv::Mat的convertTo()
+cv::subtract()
+cv::splite()
+cv::imread()
+cv::Mat(height, width, type, data)
+cv::Mat(cv::Size, type, cv::Scalar)
+% Section X.7
+\section{代数运算BLAS}
+BLAS全称Basic Linear Algebra Subprograms，是线性代数运算中所需算法的集合，其中包括诸如向量加法、向量乘法、矩阵乘法等。BLAS最早起源于Fortran，其中定义的函数接口后来被其他代数运算库做为标准接口使用，这些运算库包括：ATLAS、Intel Math Kernel Library (MKL)和OpenBLAS等。在NVIDIA公司的CUDA SDK中也包括了一个叫做cuBLAS的BLAS实现，主要应用于该公司的GPU产品。
+% Section X.7.1
+\subsection{CPU端的BLAS}\label{deps/blas/cpu}
+\subsubsection{cblas\_*axpy()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\ 
+     void cblas\_saxpy(const int n, const float a, const float* x, const int incx float* y, int incy) \\
+     void cblas\_daxpy(const int n, const double a, const double* x, const int incx double* y, int incy)
+   \item{\kai{参数}}\\
+     n - x和y中元素个数\\
+     a - 尺度系数\\
+     x - 数组x首地址\\
+     incx - x的计算间隔\\
+     y - 数组y首地址\\
+     incy- y的计算间隔
+   \item{\kai{返回值}}\\
+     float或double
+   \item{\kai{描述}}\\
+     $y\coloneqq a*x+y$
+\end{cnfrmfunc}
+\subsubsection{cblas\_*asum()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\ 
+     float cblas\_sasum (const int n, const float *x, const int incx)\\
+     double cblas\_dasum (const int n, const double *x, const int incx)
+   \item{\kai{参数}}\\
+     n - x和y中元素个数\\
+     x - 数组x首地址\\
+     incx - x的计算间隔
+   \item{\kai{返回值}}\\
+     float或者double
+   \item{\kai{描述}}\\
+     $res\coloneqq \sum\limits_{i}^{n}x[i]$
+\end{cnfrmfunc}
+\subsubsection{cblas\_*dot()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\ 
+     float cblas\_sdot (const int n, const float *x, const int incx, const float *y, const int incy)\\
+     double cblas\_ddot (const int n, const float *x, const int incx, const float *y, const int incy)
+   \item{\kai{参数}}\\
+     n - x和y中元素个数\\
+     x - 数组x首地址\\
+     incx - x的计算间隔\\
+     y - 数组y的首地址\\
+     incy - y的计算间隔
+   \item{\kai{返回值}}\\
+     float或者double
+   \item{\kai{描述}}\\
+     $res\coloneqq \sum\limits_{i}^{n}x[i]*y[i]$
+\end{cnfrmfunc}
+\subsubsection{cblas\_*scal()}
+\begin{cnfrmfunc}
+  \item{\kai{原型}}\\
+    void cblas\_sscal (const int n, const float a, float *x, const int incx)\\
+    void cblas\_dscal (const int n, const double a, double *x, const int incx)
+   \item{\kai{参数}}\\
+     n - x和y中元素个数\\
+     a - 系数\\
+     x - 数组x首地址\\
+     incx - x的计算间隔\\
+   \item{\kai{返回值}}\\
+     空值
+   \item{\kai{描述}}\\
+     $res\coloneqq a * x[i]$
+\end{cnfrmfunc}   
+   
+ % Section X.7.2
+\subsection{GPU端的BLAS}\label{deps/blas/gpu}
+\subsubsection{cublas*axpy()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\ 
+     cublasStatus\_t cublasSaxpy(cublasHandle\_t handle, int n,
+                           const float           *alpha,
+                           const float           *x, int incx,
+                           float                 *y, int incy)\\
+     cublasStatus\_t cublasDaxpy(cublasHandle\_t handle, int n,
+                           const double          *alpha,
+                           const double          *x, int incx,
+                           double                *y, int incy)
+   \item{\kai{参数}}\\
+     handle - cuBLAS库的句柄\\                      
+     n - x和y中元素个数\\
+     alpha - 尺度系数\\
+     x - 数组x首地址\\
+     incx - x的计算间隔\\
+     y - 数组y首地址\\
+     incy- y的计算间隔
+   \item{\kai{返回值}}\\
+     cublasStatus\_t
+   \item{\kai{描述}}\\
+     $y\coloneqq a*x+y$
+\end{cnfrmfunc}
+\subsubsection{cublas*asum()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\ 
+     cublasStatus\_t  cublasSasum(cublasHandle\_t handle, int n,
+                                 const float *x, int incx, float  *result)\\
+     cublasStatus\_t  cublasDasum(cublasHandle\_t handle, int n,
+                                 const double *x, int incx, double *result)
+   \item{\kai{参数}}\\
+     handle - cuBLAS库的句柄\\                      
+     n - x中元素个数\\
+     x - 数组x首地址\\
+     incx - x的计算间隔\\
+     result - 保存计算的结果
+   \item{\kai{返回值}}\\
+     cublasStatus\_t
+   \item{\kai{描述}}\\
+     $result\coloneqq \sum\limits_{i}^{n}x[i]$
+\end{cnfrmfunc}
+\subsubsection{cublas*dot()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\ 
+     cublasStatus\_t cublasSdot (cublasHandle\_t handle, int n,
+                                const float *x, int incx,
+                                const float *y, int incy,
+                                float *result)\\
+     cublasStatus\_t cublasDdot (cublasHandle\_t handle, int n,
+                                const double *x, int incx,
+                                const double *y, int incy,
+                                double *result)
+   \item{\kai{参数}}\\
+     handle - cuBLAS库的句柄\\                      
+     n - x中元素个数\\
+     x - 数组x首地址\\
+     incx - x的计算间隔\\
+     y - 数组y首地址\\
+     incy - y的计算间隔\\
+     result - 保存计算的结果
+   \item{\kai{返回值}}\\
+     cublasStatus\_t
+   \item{\kai{描述}}\\
+     $result\coloneqq \sum\limits_{i}^{n}x[i]*y[i]$
+\end{cnfrmfunc}
+\subsubsection{cublas*scal()}
+\begin{cnfrmfunc}
+   \item{\kai{原型}}\\ 
+     cublasStatus\_t  cublasSscal(cublasHandle\_t handle, int n,
+                                 const float *alpha,
+                                 float *x, int incx)\\
+     cublasStatus\_t  cublasDscal(cublasHandle\_t handle, int n,
+                                 const double *alpha,
+                                 double *x, int incx)
+   \item{\kai{参数}}\\
+     handle - cuBLAS库的句柄\\                      
+     n - x中元素个数\\
+     alpha - 系数\\
+     x - 数组x首地址\\
+     incx - x的计算间隔\\
+   \item{\kai{返回值}}\\
+     cublasStatus\_t
+   \item{\kai{描述}}\\
+     $x[i]\coloneqq alpha * x[i]$
+\end{cnfrmfunc}
+   
+

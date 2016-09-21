@@ -1,0 +1,31 @@
+\chapter{Proto文件}
+Caffe中的Proto文件用于描述Caffe运行所需的各项参数信息，文件名为caffe.proro。
+\section{Blob相关}\label{proto/file/blob}
+Proto文件中关于Blob部分主要描述数据存储成员对象和数据维度：
+\begin{minted}{c++}
+// Specifies the shape (dimensions) of a Blob.
+message BlobShape {
+  repeated int64 dim = 1 [packed = true];
+}
+
+message BlobProto {
+  optional BlobShape shape = 7;
+  repeated float data = 5 [packed = true];
+  repeated float diff = 6 [packed = true];
+  repeated double double_data = 8 [packed = true];
+  repeated double double_diff = 9 [packed = true];
+
+  // 4D dimensions -- deprecated.  Use "shape" instead.
+  optional int32 num = 1 [default = 0];
+  optional int32 channels = 2 [default = 0];
+  optional int32 height = 3 [default = 0];
+  optional int32 width = 4 [default = 0];
+}
+
+// The BlobProtoVector is simply a way to pass multiple blobproto instances
+// around.
+message BlobProtoVector {
+  repeated BlobProto blobs = 1;
+}
+\end{minted}
+在message BlobProto中已经放弃通过num、channels、height和width字段的方式来描述Blob对象中数据维度（但是目前仍然可用），而是使用一个新定义的message BlobShape来进行描述，同时该字段为optional类型。
